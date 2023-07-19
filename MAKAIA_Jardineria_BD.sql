@@ -264,3 +264,61 @@ insert into  informacion_pedido (codigo_pedido, codigo_producto, cantidad, preci
 insert into  informacion_pedido (codigo_pedido, codigo_producto, cantidad, precio_unitario) values (5, 2, 1, 25000);
 insert into  informacion_pedido (codigo_pedido, codigo_producto, cantidad, precio_unitario) values (5, 3, 3, 36000);
 insert into  informacion_pedido (codigo_pedido, codigo_producto, cantidad, precio_unitario) values (5, 10, 10, 150000);
+
+-- Consultas
+-- 1. Devuelve un listado con el código de oficina y la ciudad donde hay oficinas.
+select codigo_oficina, ciudad from oficina;
+
+-- 2. Devuelve un listado con la ciudad y el teléfono de las oficinas de España.
+select ciudad, telefono from oficina where pais = 'Spain';
+
+-- 3. Devuelve un listado con el nombre, apellidos y email de los empleados cuyo jefe tiene un código de jefe igual a 7.
+select nombre, apellido1, apellido2, email from empleado where codigo_jefe = 7;
+
+-- 4. Devuelve un listado con el código de cliente de aquellos clientes que realizaron algún pago en 2008. Tenga en cuenta que deberá eliminar aquellos códigos de cliente que aparezcan repetidos. Resuelva la consulta:
+-- Utilizando la función YEAR de MySQL.
+select distinct codigo_cliente from pago where YEAR(fecha_pago) = 2008;
+-- Utilizando la función DATE_FORMAT de MySQL.
+select distinct codigo_cliente from pago where date_format(fecha_pago,"%Y") = 2008;
+
+-- 5. ¿Cuántos empleados hay en la compañía?
+select count(codigo_empleado) as 'Cantidad de empleados' from empleado;
+
+-- 6. ¿Cuántos clientes tiene cada país?
+select pais, count(codigo_cliente) as 'Cantidad de clientes' from direccion group by pais;
+
+-- 7. ¿Cuál fue el pago medio en 2009?
+select avg(total_pago) as 'Pago medio año 2009' from pago where YEAR(fecha_pago) = 2009;
+
+-- 8. ¿Cuántos pedidos hay en cada estado? Ordena el resultado de forma descendente por el número de pedidos.
+select estado, count(codigo_pedido) as 'Número de pedidos' from pedido group by estado order by 'Número de pedidos' desc;
+
+-- 9. Calcula el precio de venta del producto más caro y barato en una misma consulta.
+(select codigo_producto, precio_unitario from informacion_pedido group by codigo_producto order by precio_unitario limit 1) union (select codigo_producto, precio_unitario from informacion_pedido group by codigo_producto order by precio_unitario desc limit 1);
+
+-- 10. Devuelve el nombre del cliente con mayor límite de crédito.
+select nombre_cliente from cliente where limite_credito = (select max(limite_credito) as Maximo from cliente);
+
+-- 11. Devuelve el nombre del producto que tenga el precio de venta más caro.
+select nombre as 'Producto más caro' from inventario where codigo_producto = (select codigo_producto from informacion_pedido group by codigo_producto order by precio_unitario desc limit 1);
+
+-- 12. Devuelve el nombre del producto del que se han vendido más unidades. (Tenga en cuenta que tendrá que calcular cuál es el número total de unidades que se han vendido de cada producto a partir de los datos de la tabla detalle_pedido)
+select nombre as 'Producto más vendido' from inventario where codigo_producto = (select codigo_producto from informacion_pedido group by codigo_producto order by sum(cantidad) desc limit 1);
+
+-- 13. Los clientes cuyo límite de crédito sea mayor que los pagos que haya realizado. (Sin utilizar INNER JOIN).
+select * from (select nombre_cliente, limite_credito, total_pago from cliente, pago where cliente.codigo_cliente = pago.codigo_cliente) as a where limite_credito > total_pago;
+
+-- 14. Devuelve el listado de clientes indicando el nombre del cliente y cuantos pedidos ha realizado. Tenga en cuenta que pueden existir clientes que no han realizado ningún pedido.
+select cliente.nombre_cliente, resultado.cantidad_pedidos as 'Cantidad de pedidos' from cliente join (select codigo_cliente, count(codigo_cliente) as cantidad_pedidos from pago group by codigo_cliente) as resultado on cliente.codigo_cliente = resultado.codigo_cliente;
+
+-- 15. Devuelve el nombre, apellidos, puesto y teléfono de la oficina de aquellos empleados que no sean representante de ventas de ningún cliente.    
+select e.nombre, e.apellido1, e.apellido2, e.puesto, oficina.telefono as telefono_oficina from (select emp.codigo_empleado, emp.nombre, emp.apellido1, emp.apellido2, emp.puesto, jefe.codigo_oficina from (select * from empleado where codigo_empleado not in (select distinct codigo_empleado from cliente)) as emp join jefe on emp.codigo_jefe = jefe.codigo_jefe where emp.puesto = 'Representante de ventas') as e join oficina on e.codigo_oficina = oficina.codigo_oficina;
+    
+-- 16. Devuelve las oficinas donde no trabajan ninguno de los empleados que hayan sido los representantes de ventas de algún cliente que haya realizado la compra de algún producto de la gama Frutales(Se cambia a gama 1).
+select * from oficina where codigo_oficina not in (select codigo_oficina from jefe where codigo_jefe = (select codigo_jefe from empleado where codigo_empleado in (select distinct codigo_empleado from cliente where codigo_cliente in (select codigo_cliente from (select distinct codigo_cliente, gama from (select codigo_cliente, codigo_producto from (select cliente.codigo_cliente, pedido.codigo_pedido from cliente inner join pedido on cliente.codigo_cliente = pedido.codigo_cliente) as cliente_pedido join informacion_pedido on cliente_pedido.codigo_pedido = informacion_pedido.codigo_pedido) as cliente_info_pedido join inventario on cliente_info_pedido.codigo_producto = inventario.codigo_producto) as cliente_gama join gama_producto on  gama_producto.gama = cliente_gama.gama where descripcion = 'Abonos y fertilizantes'))));
+
+-- 17. Devuelve el listado de clientes indicando el nombre del cliente y cuantos pedidos ha realizado. Tenga en cuenta que pueden existir clientes que no han realizado ningún pedido.
+select nombre_cliente, pedidos as 'Número de pedidos' from cliente join (select codigo_cliente, count(*) as pedidos from pedido group by codigo_cliente) as pedidos_cliente on cliente.codigo_cliente = pedidos_cliente.codigo_cliente;
+
+-- 18. Devuelve un listado con los nombres de los clientes y el total pagado por cada uno de ellos. Tenga en cuenta que pueden existir clientes que no han realizado ningún pago.
+select nombre_cliente, pagos as 'Total pagado' from cliente join (select codigo_cliente, sum(total_pago) as pagos from pago group by codigo_cliente) as pagos_cliente on cliente.codigo_cliente = pagos_cliente.codigo_cliente;
