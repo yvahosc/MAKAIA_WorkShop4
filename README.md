@@ -3,7 +3,7 @@
 ## Desarrollo WorkShop 4 dentro del desarrollo del BootCamp de desarrollo web BackEnd de MAKAIA.
 
 ### Equipo de trabajo:
-  * Daniel Espinoza
+  * Daniel Espinosa
   * Daniel Marquez
   * Jefferson Naranjo
   * Yeisson Vahos
